@@ -19,6 +19,8 @@ const { Title } = Typography;
 const { TabPane } = Tabs;
 
 function LoginPage() {
+  console.log(import.meta.env.VITE_API_KEY);
+
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [loginForm] = Form.useForm();
