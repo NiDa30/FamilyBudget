@@ -1,0 +1,18 @@
+version: "3.9"
+
+services:
+  web-admin:
+    build:
+      context: ./web-admin
+    ports:
+      - "5173:80" # 5173 là port ngoài, 80 là port nginx trong container
+    container_name: familybudget-web-admin
+    restart: always
+
+  api-server:
+    build:
+      context: ./api-server
+    ports:
+      - "5000:5000"
+    container_name: familybudget-api
+    restart: always
