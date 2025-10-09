@@ -13,14 +13,13 @@ import LoginPage from "./pages/LoginPage";
 import PrivateRoute from "./components/PrivateRoute";
 
 function App() {
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [user, setUser] = useState(null);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
       setLoading(false);
-
       // Đồng bộ với localStorage cho PrivateRoute
       if (currentUser) {
         localStorage.setItem("isAuth", "true");
@@ -28,7 +27,6 @@ function App() {
         localStorage.removeItem("isAuth");
       }
     });
-
     return () => unsubscribe();
   }, []);
 
