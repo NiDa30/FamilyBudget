@@ -25,7 +25,7 @@ dist-ssr
 .env
 .env.local
 .node_modules
-
+.test/*
 web-admin/quanlygoiychitieu-firebase-adminsdk-fbsvc-509db66143.json
 # Firebase Admin SDK credentials
 
