@@ -41,7 +41,28 @@ mobile-app/ios/
 # Web Admin (React/Vite)
 web-admin/dist/
 web-admin/quanlygoiychitieu-firebase-adminsdk-fbsvc-*.json
-**/env/*
+web-admin/env/*
 
-
-# ---------------------------------------
+# Family Expo (React Native/Expo)
+FamilyBudgetExpo/.expo/
+FamilyBudgetExpo/web-build/
+FamilyBudgetExpo/android/
+FamilyBudgetExpo/ios/
+FamilyBudgetExpo/firebaseConfig.js
+FamilyBudgetExpo/firebaseConfig.ts
+FamilyBudgetExpo/app-example
+FamilyBudgetExpo/.env*.local
+FamilyBudgetExpo/*.pem
+FamilyBudgetExpo/.kotlin/
+FamilyBudgetExpo/*.orig.*
+FamilyBudgetExpo/*.jks
+FamilyBudgetExpo/*.p8
+FamilyBudgetExpo/*.p12
+FamilyBudgetExpo/*.key
+FamilyBudgetExpo/*.mobileprovision
+FamilyBudgetExpo/.metro-health-check*
+FamilyBudgetExpo/*.tsbuildinfo
+FamilyBudgetExpo/npm-debug.*
+FamilyBudgetExpo/yarn-debug.*
+FamilyBudgetExpo/yarn-error.*
+FamilyBudgetExpo/.DS_Store
