@@ -40,4 +40,4 @@ mobile-app/ios/
 
 # Web Admin (React/Vite)
 web-admin/dist/
-./web-admin/test/quanlygoiychitieu-firebase-adminsdk-fbsvc-509db66143.json
+./web-admin/test/*
