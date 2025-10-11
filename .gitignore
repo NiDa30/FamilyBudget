@@ -41,3 +41,4 @@ mobile-app/ios/
 # Web Admin (React/Vite)
 web-admin/dist/
 web-admin/quanlygoiychitieu-firebase-adminsdk-fbsvc-*.json
+**/env/*
