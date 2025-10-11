@@ -42,3 +42,6 @@ mobile-app/ios/
 web-admin/dist/
 web-admin/quanlygoiychitieu-firebase-adminsdk-fbsvc-*.json
 **/env/*
+
+
+# ---------------------------------------
