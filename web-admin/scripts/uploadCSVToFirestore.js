@@ -208,8 +208,8 @@ async function main() {
         collection: "family_info",
       },
       {
-        path: path.join(__dirname, "../public/data/family_expenses.csv"),
-        collection: "family_expenses",
+        path: path.join(__dirname, "../public/data/household_expenses.csv"),
+        collection: "household_expenses",
       },
       {
         path: path.join(__dirname, "../public/data/house_utilities.csv"),
