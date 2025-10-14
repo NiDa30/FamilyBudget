@@ -8,78 +8,286 @@ import {
   Popconfirm,
   Card,
   Tag,
+  Row,
+  Col,
+  Statistic,
+  Spin,
+  Empty,
+  Avatar,
+  Tooltip,
+  Alert,
 } from "antd";
-
-// Mẫu dữ liệu giả lập
-const mockUsers = [
-  { id: 1, name: "Nguyen Van A", email: "a@gmail.com", status: "active" },
-  { id: 2, name: "Tran Thi B", email: "b@gmail.com", status: "locked" },
-  { id: 3, name: "Le Van C", email: "c@gmail.com", status: "active" },
-  { id: 4, name: "Pham Thi D", email: "d@gmail.com", status: "active" },
-  { id: 5, name: "Hoang Van E", email: "e@gmail.com", status: "locked" },
-];
+import {
+  UserOutlined,
+  LockOutlined,
+  UnlockOutlined,
+  SearchOutlined,
+  ReloadOutlined,
+  CrownOutlined,
+  WarningOutlined,
+} from "@ant-design/icons";
+import userService from "../services/userService";
+import { isFirebaseReady } from "../firebase";
+import "../assets/css/pages/UsersPage.css";
 
 function UsersPage() {
   const [users, setUsers] = useState([]);
+  const [filteredUsers, setFilteredUsers] = useState([]);
   const [searchText, setSearchText] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState(null);
+  const [error, setError] = useState(null);
+  const [stats, setStats] = useState({
+    total: 0,
+    active: 0,
+    locked: 0,
+    admins: 0,
+  });
 
+  // Check Firebase connection on mount
   useEffect(() => {
-    // Giả lập fetch API
-    setUsers(mockUsers);
+    if (!isFirebaseReady()) {
+      setError("Firebase chưa sẵn sàng. Vui lòng kiểm tra cấu hình.");
+      setLoading(false);
+      return;
+    }
+
+    // Subscribe to real-time updates
+    setLoading(true);
+    let unsubscribe;
+
+    try {
+      unsubscribe = userService.subscribeToUsers(
+        (fetchedUsers) => {
+          setUsers(fetchedUsers);
+          setFilteredUsers(fetchedUsers);
+          setLoading(false);
+          setError(null);
+          calculateStats(fetchedUsers);
+        },
+        (err) => {
+          console.error("Subscription error:", err);
+          setError(`Lỗi tải dữ liệu: ${err.message}`);
+          setLoading(false);
+        }
+      );
+    } catch (err) {
+      console.error("Setup error:", err);
+      setError(`Lỗi khởi tạo: ${err.message}`);
+      setLoading(false);
+    }
+
+    // Cleanup
+    return () => {
+      if (unsubscribe && typeof unsubscribe === "function") {
+        unsubscribe();
+      }
+    };
   }, []);
 
-  const handleLockUnlock = (id) => {
-    setUsers((prev) =>
-      prev.map((user) =>
-        user.id === id
-          ? { ...user, status: user.status === "active" ? "locked" : "active" }
-          : user
-      )
-    );
-    const user = users.find((u) => u.id === id);
-    message.success(
-      `${user.name} đã được ${user.status === "active" ? "khoá" : "mở khoá"}`
-    );
+  // Filter users
+  useEffect(() => {
+    if (searchText.trim() === "") {
+      setFilteredUsers(users);
+    } else {
+      const lowerSearch = searchText.toLowerCase();
+      const filtered = users.filter(
+        (user) =>
+          user.name?.toLowerCase().includes(lowerSearch) ||
+          user.email?.toLowerCase().includes(lowerSearch) ||
+          user.id?.toLowerCase().includes(lowerSearch)
+      );
+      setFilteredUsers(filtered);
+    }
+  }, [searchText, users]);
+
+  // Calculate statistics
+  const calculateStats = (userList) => {
+    setStats({
+      total: userList.length,
+      active: userList.filter((u) => u.accountStatus === "ACTIVE").length,
+      locked: userList.filter((u) => u.accountStatus === "LOCKED").length,
+      admins: userList.filter((u) => u.role === "ADMIN").length,
+    });
   };
 
-  const filteredUsers = users.filter(
-    (u) =>
-      u.name.toLowerCase().includes(searchText.toLowerCase()) ||
-      u.email.toLowerCase().includes(searchText.toLowerCase())
-  );
+  // Handle Lock/Unlock
+  const handleLockUnlock = async (record) => {
+    setActionLoading(record.id);
 
+    try {
+      const newStatus = await userService.toggleUserStatus(
+        record.id,
+        record.accountStatus
+      );
+
+      message.success(
+        `${record.name} đã được ${
+          newStatus === "LOCKED" ? "khóa" : "mở khóa"
+        } thành công!`
+      );
+    } catch (err) {
+      console.error("Toggle error:", err);
+      message.error(`Lỗi: ${err.message}`);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  // Handle refresh
+  const handleRefresh = async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const fetchedUsers = await userService.getAllUsers();
+      setUsers(fetchedUsers);
+      setFilteredUsers(fetchedUsers);
+      calculateStats(fetchedUsers);
+      message.success("Đã làm mới danh sách!");
+    } catch (err) {
+      console.error("Refresh error:", err);
+      message.error(`Không thể làm mới: ${err.message}`);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Format date
+  const formatDate = (date) => {
+    if (!date) return "N/A";
+    try {
+      return new Date(date).toLocaleString("vi-VN");
+    } catch {
+      return "Invalid date";
+    }
+  };
+
+  // Table columns
   const columns = [
-    { title: "ID", dataIndex: "id", key: "id", width: 60 },
-    { title: "Họ và tên", dataIndex: "name", key: "name" },
-    { title: "Email", dataIndex: "email", key: "email" },
+    {
+      title: "Avatar",
+      dataIndex: "avatarURL",
+      key: "avatar",
+      width: 80,
+      render: (url, record) => (
+        <Avatar
+          size={48}
+          src={url}
+          icon={<UserOutlined />}
+          style={{
+            backgroundColor: record.role === "ADMIN" ? "#f50" : "#1890ff",
+          }}
+        />
+      ),
+    },
+    {
+      title: "Họ và tên",
+      dataIndex: "name",
+      key: "name",
+      render: (text, record) => (
+        <Space direction="vertical" size={0}>
+          <Space>
+            <strong>{text || "N/A"}</strong>
+            {record.role === "ADMIN" && (
+              <Tooltip title="Quản trị viên">
+                <CrownOutlined style={{ color: "#f50" }} />
+              </Tooltip>
+            )}
+          </Space>
+          <small style={{ color: "#999" }}>ID: {record.id}</small>
+        </Space>
+      ),
+    },
+    {
+      title: "Email",
+      dataIndex: "email",
+      key: "email",
+      render: (email) => (
+        <a href={`mailto:${email}`} style={{ color: "#1890ff" }}>
+          {email || "N/A"}
+        </a>
+      ),
+    },
+    {
+      title: "SĐT",
+      dataIndex: "phoneNumber",
+      key: "phone",
+      render: (phone) => phone || <span style={{ color: "#999" }}>N/A</span>,
+    },
+    {
+      title: "Vai trò",
+      dataIndex: "role",
+      key: "role",
+      render: (role) =>
+        role === "ADMIN" ? (
+          <Tag color="red" icon={<CrownOutlined />}>
+            Quản trị
+          </Tag>
+        ) : (
+          <Tag color="blue" icon={<UserOutlined />}>
+            Người dùng
+          </Tag>
+        ),
+    },
     {
       title: "Trạng thái",
-      dataIndex: "status",
+      dataIndex: "accountStatus",
       key: "status",
-      render: (text) =>
-        text === "active" ? (
-          <Tag color="green">Hoạt động</Tag>
+      render: (status) =>
+        status === "ACTIVE" ? (
+          <Tag color="green" icon={<UnlockOutlined />}>
+            Hoạt động
+          </Tag>
         ) : (
-          <Tag color="red">Đã khoá</Tag>
+          <Tag color="red" icon={<LockOutlined />}>
+            Đã khóa
+          </Tag>
         ),
+    },
+    {
+      title: "Đăng nhập cuối",
+      dataIndex: "lastLoginTime",
+      key: "lastLogin",
+      render: (date) => (
+        <small style={{ color: "#666" }}>{formatDate(date)}</small>
+      ),
     },
     {
       title: "Hành động",
       key: "action",
+      width: 150,
+      fixed: "right",
       render: (_, record) => (
         <Space>
           <Popconfirm
             title={`Bạn có chắc muốn ${
-              record.status === "active" ? "khoá" : "mở khoá"
+              record.accountStatus === "ACTIVE" ? "khóa" : "mở khóa"
             } tài khoản này?`}
-            onConfirm={() => handleLockUnlock(record.id)}
+            description={`Tài khoản: ${record.email}`}
+            onConfirm={() => handleLockUnlock(record)}
+            okText="Xác nhận"
+            cancelText="Hủy"
+            okButtonProps={{
+              danger: record.accountStatus === "ACTIVE",
+            }}
           >
             <Button
-                className={record.status === "active" ? "btn-lock" : "btn-unlock"}
+              type={record.accountStatus === "ACTIVE" ? "default" : "primary"}
+              danger={record.accountStatus === "ACTIVE"}
+              icon={
+                record.accountStatus === "ACTIVE" ? (
+                  <LockOutlined />
+                ) : (
+                  <UnlockOutlined />
+                )
+              }
+              loading={actionLoading === record.id}
+              disabled={record.role === "ADMIN"}
             >
-                {record.status === "active" ? "Khoá" : "Mở khoá"}
+              {record.accountStatus === "ACTIVE" ? "Khóa" : "Mở khóa"}
             </Button>
-
           </Popconfirm>
         </Space>
       ),
@@ -87,37 +295,129 @@ function UsersPage() {
   ];
 
   return (
-    <Card
-      title="📋 Quản lý người dùng"
-      bordered={false}
-      style={{
-        borderRadius: 16,
-        background: "#ffffff",
-        boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
-      }}
-      headStyle={{
-        background: "linear-gradient(90deg, #06b6d4, #3b82f6)",
-        color: "#fff",
-        borderRadius: "16px 16px 0 0",
-        fontSize: 18,
-      }}
-    >
-      <Input.Search
-        placeholder="🔍 Tìm theo tên hoặc email"
-        allowClear
-        style={{ width: 300, marginBottom: 16, borderRadius: 8 }}
-        value={searchText}
-        onChange={(e) => setSearchText(e.target.value)}
-      />
-      <Table
-        columns={columns}
-        dataSource={filteredUsers}
-        rowKey="id"
-        pagination={{ pageSize: 5 }}
-        bordered
-        style={{ borderRadius: 12, overflow: "hidden" }}
-      />
-    </Card>
+    <div className="users-page">
+      {/* Error Alert */}
+      {error && (
+        <Alert
+          message="Lỗi kết nối"
+          description={error}
+          type="error"
+          icon={<WarningOutlined />}
+          showIcon
+          closable
+          onClose={() => setError(null)}
+          style={{ marginBottom: 16 }}
+          action={
+            <Button size="small" onClick={handleRefresh}>
+              Thử lại
+            </Button>
+          }
+        />
+      )}
+
+      {/* Statistics Cards */}
+      <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+        <Col xs={24} sm={12} md={6}>
+          <Card className="stat-card stat-total">
+            <Statistic
+              title="Tổng người dùng"
+              value={stats.total}
+              prefix={<UserOutlined />}
+              valueStyle={{ color: "#1890ff" }}
+            />
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} md={6}>
+          <Card className="stat-card stat-active">
+            <Statistic
+              title="Đang hoạt động"
+              value={stats.active}
+              prefix={<UnlockOutlined />}
+              valueStyle={{ color: "#52c41a" }}
+            />
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} md={6}>
+          <Card className="stat-card stat-locked">
+            <Statistic
+              title="Đã khóa"
+              value={stats.locked}
+              prefix={<LockOutlined />}
+              valueStyle={{ color: "#ff4d4f" }}
+            />
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} md={6}>
+          <Card className="stat-card stat-admin">
+            <Statistic
+              title="Quản trị viên"
+              value={stats.admins}
+              prefix={<CrownOutlined />}
+              valueStyle={{ color: "#f50" }}
+            />
+          </Card>
+        </Col>
+      </Row>
+
+      {/* Main Table Card */}
+      <Card
+        title={
+          <Space>
+            <UserOutlined style={{ fontSize: 20 }} />
+            <span style={{ fontSize: 18 }}>Quản lý người dùng</span>
+          </Space>
+        }
+        className="users-table-card"
+        extra={
+          <Button
+            icon={<ReloadOutlined />}
+            onClick={handleRefresh}
+            loading={loading}
+          >
+            Làm mới
+          </Button>
+        }
+      >
+        {/* Search Bar */}
+        <Input
+          placeholder="🔍 Tìm theo tên, email hoặc ID"
+          prefix={<SearchOutlined />}
+          allowClear
+          size="large"
+          style={{ marginBottom: 16, maxWidth: 400, borderRadius: 8 }}
+          value={searchText}
+          onChange={(e) => setSearchText(e.target.value)}
+        />
+
+        {/* Table */}
+        <Spin spinning={loading} tip="Đang tải dữ liệu...">
+          {filteredUsers.length === 0 && !loading ? (
+            <Empty
+              description="Không tìm thấy người dùng nào"
+              style={{ margin: "60px 0" }}
+            />
+          ) : (
+            <Table
+              columns={columns}
+              dataSource={filteredUsers}
+              rowKey="id"
+              pagination={{
+                pageSize: 10,
+                showSizeChanger: true,
+                showTotal: (total) => `Tổng ${total} người dùng`,
+                pageSizeOptions: ["5", "10", "20", "50"],
+              }}
+              scroll={{ x: 1200 }}
+              bordered
+              className="users-table"
+              rowClassName={(record) =>
+                record.accountStatus === "LOCKED" ? "locked-row" : ""
+              }
+            />
+          )}
+        </Spin>
+      </Card>
+    </div>
   );
 }
 
