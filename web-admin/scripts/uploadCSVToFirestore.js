@@ -203,17 +203,100 @@ async function main() {
     console.log("🔥 Bắt đầu quá trình upload CSV lên Firestore...\n");
 
     const csvFiles = [
+      // {
+      //   path: path.join(__dirname, "../public/data/family_info.csv"),
+      //   collection: "family_info",
+      // },
+      // {
+      //   path: path.join(__dirname, "../public/data/household_expenses.csv"),
+      //   collection: "household_expenses",
+      // },
+      // {
+      //   path: path.join(__dirname, "../public/data/house_utilities.csv"),
+      //   collection: "house_utilities",
+      // },
       {
-        path: path.join(__dirname, "../public/data/family_info.csv"),
-        collection: "family_info",
+        path: path.join(__dirname, "../public/data/USER.csv"), //1
+        collection: "USER",
       },
       {
-        path: path.join(__dirname, "../public/data/household_expenses.csv"),
-        collection: "household_expenses",
+        path: path.join(__dirname, "../public/data/TRANSACTION.csv"), //2
+        collection: "TRANSACTION",
       },
       {
-        path: path.join(__dirname, "../public/data/house_utilities.csv"),
-        collection: "house_utilities",
+        path: path.join(__dirname, "../public/data/CATEGORY.csv"), //4
+        collection: "CATEGORY",
+      },
+      {
+        path: path.join(__dirname, "../public/data/BUDGET.csv"), //5
+        collection: "BUDGET",
+      },
+      {
+        path: path.join(__dirname, "../public/data/GOAL.csv"), //6
+        collection: "GOAL",
+      },
+      {
+        path: path.join(__dirname, "../public/data/RECURRING_TXN.csv"), //7
+        collection: "RECURRING_TXN",
+      },
+      {
+        path: path.join(__dirname, "../public/data/SYNC_LOG.csv"), //8
+        collection: "SYNC_LOG",
+      },
+      {
+        path: path.join(__dirname, "../public/data/NOTIFICATION.csv"), //9
+        collection: "NOTIFICATION",
+      },
+      {
+        path: path.join(__dirname, "../public/data/DEVICE.csv"), //10
+        collection: "DEVICE",
+      },
+      {
+        path: path.join(__dirname, "../public/data/ATTACHMENT.csv"), //11
+        collection: "ATTACHMENT",
+      },
+      {
+        path: path.join(__dirname, "../public/data/BUDGET_HISTORY.csv"), //12
+        collection: "BUDGET_HISTORY",
+      },
+      {
+        path: path.join(__dirname, "../public/data/GOAL_CONTRIBUTION.csv"), //13
+        collection: "GOAL_CONTRIBUTION",
+      },
+      {
+        path: path.join(__dirname, "../public/data/PAYMENT_METHHOD.csv"), //14
+        collection: "PAYMENT_METHHOD",
+      },
+      {
+        path: path.join(__dirname, "../public/data/MERCHART.csv"), //15
+        collection: "MERCHART",
+      },
+      {
+        path: path.join(__dirname, "../public/data/TAG.csv"), //16
+        collection: "TAG",
+      },
+      {
+        path: path.join(__dirname, "../public/data/TRANSACTION_TAG.csv"), //17
+        collection: "TRANSACTION_TAG",
+      },
+      {
+        path: path.join(__dirname, "../public/data/SPLIT_TRANSACTION.csv"), // 18
+        collection: "SPLIT_TRANSACTION",
+      },
+      {
+        path: path.join(__dirname, "../public/data/REPORT.csv"), //19
+        collection: "REPORT",
+      },
+      {
+        path: path.join(__dirname, "../public/data/APP_SETTINGS.csv"), //20
+        collection: "APP_SETTINGS",
+      },
+      {
+        path: path.join(
+          __dirname,
+          "../public/data/CATEGORY_BUDGET_TEMPLATE.csv"
+        ),
+        collection: "CATEGORY_BUDGET_TEMPLATE", //19
       },
     ];
 

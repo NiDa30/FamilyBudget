@@ -17,28 +17,28 @@ const db = admin.firestore();
  * @return {Promise<object>}
  */
 exports.registerUser = functions.https.onCall(async (data, context) => {
-  const {email, password, fullName} = data;
+  const { email, password, fullName } = data;
 
   // Validation
   if (!email || !password || password.length < 8) {
     throw new functions.https.HttpsError(
-        "invalid-argument",
-        "Invalid email or password (min 8 chars)",
+      "invalid-argument",
+      "Invalid email or password (min 8 chars)"
     );
   }
 
   try {
     // Check if user exists
     const existingUser = await db
-        .collection("users")
-        .where("email", "==", email)
-        .limit(1)
-        .get();
+      .collection("users")
+      .where("email", "==", email)
+      .limit(1)
+      .get();
 
     if (!existingUser.empty) {
       throw new functions.https.HttpsError(
-          "already-exists",
-          "Email already registered",
+        "already-exists",
+        "Email already registered"
       );
     }
 
@@ -85,15 +85,15 @@ exports.registerUser = functions.https.onCall(async (data, context) => {
  * @return {Promise<object>}
  */
 exports.loginUser = functions.https.onCall(async (data, context) => {
-  const {email, password} = data;
+  const { email, password } = data;
 
   try {
     // Get user from Firestore
     const userSnapshot = await db
-        .collection("users")
-        .where("email", "==", email)
-        .limit(1)
-        .get();
+      .collection("users")
+      .where("email", "==", email)
+      .limit(1)
+      .get();
 
     if (userSnapshot.empty) {
       throw new functions.https.HttpsError("not-found", "User not found");
@@ -105,21 +105,21 @@ exports.loginUser = functions.https.onCall(async (data, context) => {
     // Check if active
     if (!userData.isActive) {
       throw new functions.https.HttpsError(
-          "permission-denied",
-          "Account is disabled",
+        "permission-denied",
+        "Account is disabled"
       );
     }
 
     // Verify password
     const isValidPassword = await bcrypt.compare(
-        password,
-        userData.passwordHash,
+      password,
+      userData.passwordHash
     );
 
     if (!isValidPassword) {
       throw new functions.https.HttpsError(
-          "unauthenticated",
-          "Invalid password",
+        "unauthenticated",
+        "Invalid password"
       );
     }
 
@@ -155,76 +155,76 @@ exports.loginUser = functions.https.onCall(async (data, context) => {
  * Check budget daily (scheduled at 8 PM)
  */
 exports.scheduledBudgetCheck = functions.pubsub
-    .schedule("0 20 * * *")
-    .timeZone("Asia/Ho_Chi_Minh")
-    .onRun(async (context) => {
-      console.log("Running daily budget check...");
+  .schedule("0 20 * * *")
+  .timeZone("Asia/Ho_Chi_Minh")
+  .onRun(async (context) => {
+    console.log("Running daily budget check...");
 
-      try {
-        const usersSnapshot = await db.collection("users").get();
+    try {
+      const usersSnapshot = await db.collection("users").get();
 
-        for (const userDoc of usersSnapshot.docs) {
-          const userId = userDoc.id;
+      for (const userDoc of usersSnapshot.docs) {
+        const userId = userDoc.id;
 
-          // Get user's budget
-          const budgetSnapshot = await db
-              .collection("users")
-              .doc(userId)
-              .collection("budgets")
-              .where("isActive", "==", true)
-              .limit(1)
-              .get();
+        // Get user's budget
+        const budgetSnapshot = await db
+          .collection("users")
+          .doc(userId)
+          .collection("budgets")
+          .where("isActive", "==", true)
+          .limit(1)
+          .get();
 
-          if (budgetSnapshot.empty) continue;
+        if (budgetSnapshot.empty) continue;
 
-          const budget = budgetSnapshot.docs[0].data();
+        const budget = budgetSnapshot.docs[0].data();
 
-          // Get current month expenses
-          const now = new Date();
-          const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        // Get current month expenses
+        const now = new Date();
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
-          const expensesSnapshot = await db
-              .collection("users")
-              .doc(userId)
-              .collection("expenses")
-              .where("date", ">=", startOfMonth)
-              .get();
+        const expensesSnapshot = await db
+          .collection("users")
+          .doc(userId)
+          .collection("expenses")
+          .where("date", ">=", startOfMonth)
+          .get();
 
-          // Calculate expenses by category
-          const expensesByCategory = {};
-          expensesSnapshot.docs.forEach((doc) => {
-            const expense = doc.data();
-            expensesByCategory[expense.categoryId] =
+        // Calculate expenses by category
+        const expensesByCategory = {};
+        expensesSnapshot.docs.forEach((doc) => {
+          const expense = doc.data();
+          expensesByCategory[expense.categoryId] =
             (expensesByCategory[expense.categoryId] || 0) + expense.amount;
-          });
+        });
 
-          // Check each category
-          for (const [categoryId, limit] of Object.entries(budget.limits)) {
-            const spent = expensesByCategory[categoryId] || 0;
-            const percent = (spent / limit) * 100;
+        // Check each category
+        for (const [categoryId, limit] of Object.entries(budget.limits)) {
+          const spent = expensesByCategory[categoryId] || 0;
+          const percent = (spent / limit) * 100;
 
-            // Send notification if over 80%
-            if (percent >= 80 && percent < 100) {
-              await sendNotification(userId, {
-                title: "⚠️ Cảnh báo chi tiêu",
-                body: `Bạn đã chi ${percent.toFixed(0)}% hạn mức.`,
-              });
-            } else if (percent >= 100) {
-              await sendNotification(userId, {
-                title: "🚨 Vượt hạn mức",
-                body: `Bạn đã vượt ${(spent - limit).toLocaleString()} ₫.`,
-              });
-            }
+          // Send notification if over 80%
+          if (percent >= 80 && percent < 100) {
+            await sendNotification(userId, {
+              title: "⚠️ Cảnh báo chi tiêu",
+              body: `Bạn đã chi ${percent.toFixed(0)}% hạn mức.`,
+            });
+          } else if (percent >= 100) {
+            await sendNotification(userId, {
+              title: "🚨 Vượt hạn mức",
+              body: `Bạn đã vượt ${(spent - limit).toLocaleString()} ₫.`,
+            });
           }
         }
-
-        console.log("Budget check completed");
-        return null;
-      } catch (error) {
-        console.error("Budget check error:", error);
-        return null;
       }
-    });
+
+      console.log("Budget check completed");
+      return null;
+    } catch (error) {
+      console.error("Budget check error:", error);
+      return null;
+    }
+  });
 
 /**
  * Send notification to user
@@ -234,7 +234,7 @@ exports.scheduledBudgetCheck = functions.pubsub
  * @param {string} notification.body - Notification body
  * @return {Promise<void>}
  */
-async function sendNotification(userId, {title, body}) {
+async function sendNotification(userId, { title, body }) {
   try {
     const userDoc = await db.collection("users").doc(userId).get();
     const fcmToken = userDoc.data().fcmToken;
@@ -243,7 +243,7 @@ async function sendNotification(userId, {title, body}) {
 
     await admin.messaging().send({
       token: fcmToken,
-      notification: {title, body},
+      notification: { title, body },
       android: {
         priority: "high",
         notification: {
@@ -290,12 +290,12 @@ exports.sendEmail = functions.https.onCall(async (data, context) => {
   // Verify authenticated
   if (!context.auth) {
     throw new functions.https.HttpsError(
-        "unauthenticated",
-        "Must be logged in",
+      "unauthenticated",
+      "Must be logged in"
     );
   }
 
-  const {email, subject, body} = data;
+  const { email, subject, body } = data;
 
   const mailOptions = {
     from: "Expense Tracker <noreply@expensetracker.com>",
@@ -355,7 +355,7 @@ exports.sendEmail = functions.https.onCall(async (data, context) => {
 
   try {
     await transporter.sendMail(mailOptions);
-    return {success: true};
+    return { success: true };
   } catch (error) {
     console.error("Email error:", error);
     throw new functions.https.HttpsError("internal", "Failed to send email");
@@ -376,8 +376,8 @@ exports.getAdminStats = functions.https.onCall(async (data, context) => {
   // Verify admin
   if (!context.auth) {
     throw new functions.https.HttpsError(
-        "unauthenticated",
-        "Must be logged in",
+      "unauthenticated",
+      "Must be logged in"
     );
   }
 
@@ -397,34 +397,34 @@ exports.getAdminStats = functions.https.onCall(async (data, context) => {
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
     const newUsersSnapshot = await db
-        .collection("users")
-        .where("createdAt", ">=", startOfMonth)
-        .get();
+      .collection("users")
+      .where("createdAt", ">=", startOfMonth)
+      .get();
     const newUsersThisMonth = newUsersSnapshot.size;
 
     // Active users (logged in last 7 days)
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
     const activeUsersSnapshot = await db
-        .collection("users")
-        .where("lastLoginAt", ">=", sevenDaysAgo)
-        .get();
+      .collection("users")
+      .where("lastLoginAt", ">=", sevenDaysAgo)
+      .get();
     const activeUsers = activeUsersSnapshot.size;
 
     // Total transactions today
     const startOfDay = new Date(
-        now.getFullYear(),
-        now.getMonth(),
-        now.getDate(),
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate()
     );
     let todayTransactions = 0;
 
     for (const userDoc of usersSnapshot.docs) {
       const expensesSnapshot = await db
-          .collection("users")
-          .doc(userDoc.id)
-          .collection("expenses")
-          .where("date", ">=", startOfDay)
-          .get();
+        .collection("users")
+        .doc(userDoc.id)
+        .collection("expenses")
+        .where("date", ">=", startOfDay)
+        .get();
       todayTransactions += expensesSnapshot.size;
     }
 
