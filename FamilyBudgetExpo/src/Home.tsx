@@ -1,17 +1,17 @@
-import React, { useState, useEffect } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import React, { useEffect, useState } from "react";
 import {
-  View,
+  Alert,
+  FlatList,
+  StyleSheet,
   Text,
   TouchableOpacity,
-  StyleSheet,
-  FlatList,
+  View,
 } from "react-native";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
-import { useNavigation, useRoute } from "@react-navigation/native";
-import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { RouteProp } from "@react-navigation/native";
-import { RootStackParamList, Category } from "../App";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Category, RootStackParamList } from "../App";
 
 type HomeScreenNavigationProp = NativeStackNavigationProp<
   RootStackParamList,
@@ -163,100 +163,189 @@ const Home: React.FC = () => {
   }, [route.params?.updatedCategories, activeTab]);
 
   const handleDeleteCategory = async (id: string) => {
-    if (activeTab === "expense") {
-      const updatedCategories = expenseCategories.filter(
-        (cat) => cat.id !== id
-      );
-      setExpenseCategories(updatedCategories);
-      await AsyncStorage.setItem(
-        "expenseCategories",
-        JSON.stringify(updatedCategories)
-      );
-    } else {
-      const updatedCategories = incomeCategories.filter((cat) => cat.id !== id);
-      setIncomeCategories(updatedCategories);
-      await AsyncStorage.setItem(
-        "incomeCategories",
-        JSON.stringify(updatedCategories)
-      );
-    }
+    Alert.alert("Xóa phân loại", "Bạn có chắc muốn xóa phân loại này?", [
+      {
+        text: "Hủy",
+        style: "cancel",
+      },
+      {
+        text: "Xóa",
+        style: "destructive",
+        onPress: async () => {
+          if (activeTab === "expense") {
+            const updatedCategories = expenseCategories.filter(
+              (cat) => cat.id !== id
+            );
+            setExpenseCategories(updatedCategories);
+            await AsyncStorage.setItem(
+              "expenseCategories",
+              JSON.stringify(updatedCategories)
+            );
+          } else {
+            const updatedCategories = incomeCategories.filter(
+              (cat) => cat.id !== id
+            );
+            setIncomeCategories(updatedCategories);
+            await AsyncStorage.setItem(
+              "incomeCategories",
+              JSON.stringify(updatedCategories)
+            );
+          }
+        },
+      },
+    ]);
   };
 
-  const renderCategoryItem = ({ item }: { item: Category }) => (
-    <View style={styles.categoryItem}>
-      {/* Icon Trừ bên trái */}
-      <TouchableOpacity
-        style={styles.deleteButton}
-        onPress={() => handleDeleteCategory(item.id)}
-      >
-        <Icon name="minus-circle" size={24} color="#2196F3" />
-      </TouchableOpacity>
+  const renderCategoryItem = ({
+    item,
+    index,
+  }: {
+    item: Category;
+    index: number;
+  }) => (
+    <View style={[styles.categoryCard, index === 0 && { marginTop: 16 }]}>
+      <View style={styles.categoryContent}>
+        {/* Icon category với background tròn và shadow */}
+        <View
+          style={[
+            styles.categoryIconContainer,
+            { backgroundColor: item.color },
+          ]}
+        >
+          <Icon name={item.icon} size={28} color="#fff" />
+        </View>
 
-      {/* Icon category với background tròn */}
-      <View
-        style={[styles.categoryIconContainer, { backgroundColor: item.color }]}
-      >
-        <Icon name={item.icon} size={28} color="#fff" />
+        {/* Tên category và count */}
+        <View style={styles.categoryInfo}>
+          <Text style={styles.categoryName}>{item.name}</Text>
+          <Text style={styles.categoryCount}>{item.count} giao dịch</Text>
+        </View>
+
+        {/* Action buttons */}
+        <View style={styles.actionButtons}>
+          <TouchableOpacity style={styles.actionButton} activeOpacity={0.7}>
+            <Icon name="pencil-outline" size={20} color="#757575" />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={() => handleDeleteCategory(item.id)}
+            activeOpacity={0.7}
+          >
+            <Icon name="delete-outline" size={20} color="#F44336" />
+          </TouchableOpacity>
+        </View>
       </View>
 
-      {/* Tên category */}
-      <Text style={styles.categoryName}>{item.name}</Text>
-
-      {/* Icon pencil */}
-      <TouchableOpacity style={styles.editButton}>
-        <Icon name="pencil" size={20} color="#9E9E9E" />
-      </TouchableOpacity>
-
-      {/* Icon hamburger menu */}
-      <TouchableOpacity style={styles.menuButton}>
-        <Icon name="menu" size={24} color="#9E9E9E" />
+      {/* Drag handle */}
+      <TouchableOpacity style={styles.dragHandle} activeOpacity={0.7}>
+        <Icon name="drag-horizontal-variant" size={24} color="#BDBDBD" />
       </TouchableOpacity>
     </View>
   );
 
   return (
     <View style={styles.container}>
-      {/* Header với nút back và title */}
+      {/* Header với gradient effect */}
       <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => navigation.navigate("Trangchu")}
-          style={styles.backButton}
-        >
-          <Icon name="arrow-left" size={28} color="#fff" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Phân loại quản lý</Text>
+        <View style={styles.headerTop}>
+          <TouchableOpacity
+            onPress={() => navigation.navigate("Trangchu")}
+            style={styles.backButton}
+            activeOpacity={0.8}
+          >
+            <Icon name="arrow-left" size={26} color="#fff" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Quản lý phân loại</Text>
+          <View style={styles.placeholder} />
+        </View>
+
+        {/* Tab Container với thiết kế mới */}
+        <View style={styles.tabContainer}>
+          <TouchableOpacity
+            style={[styles.tab, activeTab === "expense" && styles.tabActive]}
+            onPress={() => setActiveTab("expense")}
+            activeOpacity={0.8}
+          >
+            <View style={styles.tabContent}>
+              <Icon
+                name="arrow-up-circle"
+                size={20}
+                color={
+                  activeTab === "expense" ? "#fff" : "rgba(255,255,255,0.7)"
+                }
+              />
+              <Text
+                style={[
+                  styles.tabText,
+                  activeTab === "expense" && styles.tabTextActive,
+                ]}
+              >
+                Chi tiêu
+              </Text>
+              <View
+                style={[
+                  styles.countBadge,
+                  activeTab === "expense" && styles.countBadgeActive,
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.countText,
+                    activeTab === "expense" && styles.countTextActive,
+                  ]}
+                >
+                  {expenseCategories.reduce((sum, cat) => sum + cat.count, 0)}
+                </Text>
+              </View>
+            </View>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.tab, activeTab === "income" && styles.tabActive]}
+            onPress={() => setActiveTab("income")}
+            activeOpacity={0.8}
+          >
+            <View style={styles.tabContent}>
+              <Icon
+                name="arrow-down-circle"
+                size={20}
+                color={
+                  activeTab === "income" ? "#fff" : "rgba(255,255,255,0.7)"
+                }
+              />
+              <Text
+                style={[
+                  styles.tabText,
+                  activeTab === "income" && styles.tabTextActive,
+                ]}
+              >
+                Thu nhập
+              </Text>
+              <View
+                style={[
+                  styles.countBadge,
+                  activeTab === "income" && styles.countBadgeActive,
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.countText,
+                    activeTab === "income" && styles.countTextActive,
+                  ]}
+                >
+                  {incomeCategories.reduce((sum, cat) => sum + cat.count, 0)}
+                </Text>
+              </View>
+            </View>
+          </TouchableOpacity>
+        </View>
       </View>
 
-      {/* Tab Container */}
-      <View style={styles.tabContainer}>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === "expense" && styles.tabActive]}
-          onPress={() => setActiveTab("expense")}
-        >
-          <Text
-            style={[
-              styles.tabText,
-              activeTab === "expense" && styles.tabTextActive,
-            ]}
-          >
-            CHI TIÊU(
-            {expenseCategories.reduce((sum, cat) => sum + cat.count, 0)})
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === "income" && styles.tabActive]}
-          onPress={() => setActiveTab("income")}
-        >
-          <Text
-            style={[
-              styles.tabText,
-              activeTab === "income" && styles.tabTextActive,
-            ]}
-          >
-            THU NHẬP({incomeCategories.reduce((sum, cat) => sum + cat.count, 0)}
-            )
-          </Text>
-        </TouchableOpacity>
+      {/* Info banner */}
+      <View style={styles.infoBanner}>
+        <Icon name="information-outline" size={18} color="#1E88E5" />
+        <Text style={styles.infoText}>Kéo để sắp xếp lại thứ tự phân loại</Text>
       </View>
 
       {/* List categories */}
@@ -265,17 +354,30 @@ const Home: React.FC = () => {
         renderItem={renderCategoryItem}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
-        key={activeTab} // Force re-render khi đổi tab
+        showsVerticalScrollIndicator={false}
+        key={activeTab}
       />
 
-      {/* Nút thêm phân loại mới */}
+      {/* Nút thêm phân loại mới - Floating */}
       <TouchableOpacity
-        style={styles.addButton}
+        style={styles.addButtonFloating}
         onPress={() => navigation.navigate("Nhappl")}
+        activeOpacity={0.9}
       >
-        <Icon name="plus" size={20} color="#000" />
-        <Text style={styles.addButtonText}>THÊM PHÂN LOẠI MỚI</Text>
+        <Icon name="plus" size={28} color="#fff" />
       </TouchableOpacity>
+
+      {/* Bottom Add Button */}
+      <View style={styles.bottomContainer}>
+        <TouchableOpacity
+          style={styles.addButton}
+          onPress={() => navigation.navigate("Nhappl")}
+          activeOpacity={0.8}
+        >
+          <Icon name="plus-circle-outline" size={22} color="#1E88E5" />
+          <Text style={styles.addButtonText}>Thêm phân loại mới</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 };
@@ -283,99 +385,219 @@ const Home: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: "#F5F7FA",
   },
   header: {
+    backgroundColor: "#1E88E5",
+    paddingTop: 40,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  headerTop: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#2196F3",
-    paddingVertical: 16,
+    justifyContent: "space-between",
     paddingHorizontal: 16,
-    paddingTop: 40,
+    paddingVertical: 12,
   },
   backButton: {
-    marginRight: 16,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    justifyContent: "center",
+    alignItems: "center",
   },
   headerTitle: {
     fontSize: 20,
-    fontWeight: "500",
+    fontWeight: "600",
     color: "#fff",
+    flex: 1,
+    textAlign: "center",
+  },
+  placeholder: {
+    width: 40,
   },
   tabContainer: {
     flexDirection: "row",
-    backgroundColor: "#2196F3",
     paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 4,
+    gap: 12,
   },
   tab: {
     flex: 1,
-    paddingVertical: 12,
-    alignItems: "center",
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    backgroundColor: "rgba(255, 255, 255, 0.15)",
   },
   tabActive: {
-    borderBottomWidth: 3,
-    borderBottomColor: "#fff",
+    backgroundColor: "rgba(255, 255, 255, 0.3)",
+  },
+  tabContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
   },
   tabText: {
     fontSize: 14,
-    fontWeight: "400",
-    color: "#E3F2FD",
-    letterSpacing: 0.5,
+    fontWeight: "500",
+    color: "rgba(255, 255, 255, 0.8)",
   },
   tabTextActive: {
-    fontWeight: "600",
+    fontWeight: "700",
     color: "#fff",
   },
-  listContent: {
-    paddingVertical: 8,
+  countBadge: {
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+    minWidth: 28,
+    alignItems: "center",
   },
-  categoryItem: {
+  countBadgeActive: {
+    backgroundColor: "rgba(255, 255, 255, 0.3)",
+  },
+  countText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "rgba(255, 255, 255, 0.9)",
+  },
+  countTextActive: {
+    color: "#fff",
+  },
+  infoBanner: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 16,
+    backgroundColor: "#E3F2FD",
     paddingHorizontal: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#F0F0F0",
+    paddingVertical: 12,
+    marginHorizontal: 16,
+    marginTop: 16,
+    borderRadius: 12,
+    gap: 8,
   },
-  deleteButton: {
-    marginRight: 12,
+  infoText: {
+    flex: 1,
+    fontSize: 13,
+    color: "#1565C0",
+    fontWeight: "500",
+  },
+  listContent: {
+    paddingHorizontal: 16,
+    paddingBottom: 100,
+  },
+  categoryCard: {
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    marginBottom: 12,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
+    overflow: "hidden",
+  },
+  categoryContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 16,
   },
   categoryIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
     justifyContent: "center",
     alignItems: "center",
-    marginRight: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  categoryInfo: {
+    flex: 1,
+    marginLeft: 16,
   },
   categoryName: {
-    flex: 1,
     fontSize: 16,
-    color: "#000",
+    color: "#212121",
+    fontWeight: "600",
+    marginBottom: 4,
+  },
+  categoryCount: {
+    fontSize: 13,
+    color: "#757575",
     fontWeight: "400",
   },
-  editButton: {
-    padding: 8,
-    marginRight: 8,
+  actionButtons: {
+    flexDirection: "row",
+    gap: 8,
   },
-  menuButton: {
-    padding: 8,
+  actionButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#F5F5F5",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  dragHandle: {
+    alignSelf: "center",
+    paddingVertical: 8,
+  },
+  bottomContainer: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: "#fff",
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    borderTopWidth: 1,
+    borderTopColor: "#EEEEEE",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 8,
   },
   addButton: {
     flexDirection: "row",
-    backgroundColor: "#F5F5F5",
+    backgroundColor: "#E3F2FD",
     paddingVertical: 14,
     alignItems: "center",
     justifyContent: "center",
-    marginHorizontal: 16,
-    marginVertical: 16,
-    borderRadius: 4,
+    borderRadius: 12,
+    gap: 8,
   },
   addButtonText: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: "600",
-    color: "#000",
-    marginLeft: 8,
-    letterSpacing: 0.5,
+    color: "#1E88E5",
+    letterSpacing: 0.3,
+  },
+  addButtonFloating: {
+    position: "absolute",
+    right: 20,
+    bottom: 90,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: "#1E88E5",
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#1E88E5",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
   },
 });
 
