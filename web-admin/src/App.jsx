@@ -4,95 +4,104 @@ import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "./firebase";
 
 import AdminLayout from "./layouts/AdminLayout";
+import DashboardPage from "./pages/DashboardPage";
 import UsersPage from "./pages/UsersPage";
 import CategoriesPage from "./pages/CategoriesPage";
 import ReportsPage from "./pages/ReportsPage";
 import ConfigPage from "./pages/ConfigPage";
-import SyncLogsPage from "./pages/SyncLogsPage";
 import LoginPage from "./pages/LoginPage";
 import PrivateRoute from "./components/PrivateRoute";
 
 function App() {
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
+  const [adminName, setAdminName] = useState("");
+  const [loginEmail, setLoginEmail] = useState("");
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
       setLoading(false);
-      // Đồng bộ với localStorage cho PrivateRoute
+
       if (currentUser) {
         localStorage.setItem("isAuth", "true");
+        setLoginEmail(currentUser.email || "");
+        setAdminName(
+          currentUser.displayName || currentUser.email?.split("@")[0] || "Admin"
+        );
       } else {
         localStorage.removeItem("isAuth");
+        setLoginEmail("");
+        setAdminName("");
       }
     });
+
     return () => unsubscribe();
   }, []);
 
+  const handleLogin = (email, name) => {
+    setLoginEmail(email);
+    setAdminName(name);
+  };
+
+  const handleLogout = () => {
+    setAdminName("");
+    setLoginEmail("");
+  };
+
   if (loading) {
     return (
-      <div
-        style={{
-          minHeight: "100vh",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-        }}
-      >
-        <div style={{ textAlign: "center" }}>
-          <div
-            style={{
-              width: 60,
-              height: 60,
-              border: "4px solid #fff",
-              borderTopColor: "transparent",
-              borderRadius: "50%",
-              animation: "spin 1s linear infinite",
-              margin: "0 auto 20px",
-            }}
-          />
-          <p style={{ color: "#fff", fontSize: 18, fontWeight: 500 }}>
-            Đang tải...
-          </p>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-50">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600 font-medium">Đang tải...</p>
         </div>
-        <style>{`
-          @keyframes spin {
-            to { transform: rotate(360deg); }
-          }
-        `}</style>
       </div>
     );
   }
 
   return (
     <Routes>
-      {/* Redirect root to login */}
-      <Route path="/" element={<Navigate to="/login" replace />} />
+      <Route
+        path="/"
+        element={<Navigate to={user ? "/admin/dashboard" : "/login"} replace />}
+      />
 
-      {/* Public route - Login */}
-      <Route path="/login" element={<LoginPage />} />
+      <Route
+        path="/login"
+        element={
+          user ? (
+            <Navigate to="/admin/dashboard" replace />
+          ) : (
+            <LoginPage onLogin={handleLogin} />
+          )
+        }
+      />
 
-      {/* Protected routes - Admin Dashboard */}
       <Route
         path="/admin"
         element={
           <PrivateRoute>
-            <AdminLayout />
+            <AdminLayout
+              adminName={adminName}
+              loginEmail={loginEmail}
+              onLogout={handleLogout}
+            />
           </PrivateRoute>
         }
       >
-        <Route index element={<Navigate to="users" replace />} />
+        <Route index element={<Navigate to="dashboard" replace />} />
+        <Route path="dashboard" element={<DashboardPage />} />
         <Route path="users" element={<UsersPage />} />
         <Route path="categories" element={<CategoriesPage />} />
         <Route path="reports" element={<ReportsPage />} />
         <Route path="config" element={<ConfigPage />} />
-        <Route path="sync-logs" element={<SyncLogsPage />} />
       </Route>
 
-      {/* Catch all - redirect to login */}
-      <Route path="*" element={<Navigate to="/login" replace />} />
+      <Route
+        path="*"
+        element={<Navigate to={user ? "/admin/dashboard" : "/login"} replace />}
+      />
     </Routes>
   );
 }
