@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Install & Build
+      - name: install & Build
         run: npm Install && npm run build
         working-directory: web-admin
       - uses: FirebaseExtended/action-hosting-deploy@v0
