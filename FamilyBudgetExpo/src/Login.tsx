@@ -331,7 +331,7 @@ const styles = StyleSheet.create({
     flexGrow: 1,
   },
   headerSection: {
-    backgroundColor: "#1E88E5",
+    backgroundColor: "#930f2aff",
     paddingTop: 60,
     paddingBottom: 40,
     paddingHorizontal: 24,
