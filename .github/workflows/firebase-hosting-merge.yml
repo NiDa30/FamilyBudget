@@ -12,7 +12,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install & Build
-        run: npm ci && npm run build
+        run: npm Install && npm run build
         working-directory: web-admin
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:
