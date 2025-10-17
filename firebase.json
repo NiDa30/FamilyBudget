@@ -41,5 +41,20 @@
       "enabled": true
     },
     "singleProjectMode": true
+  },
+  "hosting": {
+    "site": "quanlygoiychitieu",
+    "public": "web-admin/dist",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
   }
 }

@@ -1,5 +1,7 @@
 {
   "projects": {
-    "default": "quanlychitieuvagoiychiphi"
-  }
+    "default": "quanlygoiychitieu"
+  },
+  "targets": {},
+  "etags": {}
 }
